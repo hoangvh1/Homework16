@@ -34,8 +34,9 @@ d3.csv("data.csv", function(err, riskData) {
     data.medianincome = +data.medianincome;
     data.publictransit = +data.publictransit;
     data.population = +data.population
-    data.nodoctorvisit = +data.nodoctorvisit;});
-
+    data.nodoctorvisit = +data.nodoctorvisit;
+    data.percentcoverage = +data.percentcoverage;
+    data.percentseatbelt = +data.percentseatbelt; });
 
 //Create scale functions
   var xLinearScale = d3.scaleLinear().range([0, width]);
@@ -45,22 +46,35 @@ d3.csv("data.csv", function(err, riskData) {
   var bottomAxis = d3.axisBottom(xLinearScale);
   var leftAxis = d3.axisLeft(yLinearScale);
 
+//Define current x and y axis
+var currentAxisLabelX = "medianincome";
+findMinAndMax(currentAxisLabelX);
+xLinearScale.domain([xMin, xMax]) ;
+
+function findMinAndMaxY(ycolumn) {
+  yMax = d3.max(riskData,function(data)
+    {return +data[currentAxisLabelY]*1.1;}) }
+
+
+var currentAxisLabelY = "nodoctorvisit";
+findMinAndMaxY(currentAxisLabelY);
+yLinearScale.domain([0,yMax])   ;
+
 
 //Set up xvalue and yvalue
   var xMin;
   var xMax;
   var yMax;
+console.log (yMax);
 
 function findMinAndMax(xcolumn) {
   xMin = d3.min(riskData, function(data){return +data[xcolumn]*0.8;});
   xMax = d3.max(riskData, function(data){return +data[xcolumn]*1.1;});
-  yMax = d3.max(riskData,function(data){return +data.nodoctorvisit*1.1;});
+  yMax = d3.max(riskData,function(data){return +data[currentAxisLabelY]*1.1;})
 }
+console.log(xMin, xMax, yMax)
 
-var currentAxisLabelX = "medianincome";
-findMinAndMax(currentAxisLabelX);
-xLinearScale.domain([xMin, xMax]) ;
-yLinearScale.domain([0,yMax])   ;
+
 
 // Initialize tooltip
 var toolTip = d3.tip().attr("class", "tooltip")
@@ -68,16 +82,38 @@ var toolTip = d3.tip().attr("class", "tooltip")
   .offset([80, -60])
   .html(function(data){
       var stateName = data.state;
-      var nodoctorvisit = +data.nodoctorvisit;
+      var yinfo = +data[currentAxisLabelY];
       var xinfo = +data[currentAxisLabelX];
-      var string;
-      if (currentAxisLabelX === "medianincome"){string = "Median Income: ";}
-      else if (currentAxisLabelX === "publictransit")
-         {string = "# of People Used Public Transportation: ";}
-      else {string = "Population: ";}
-      return stateName + "<br>" + string + xinfo + 
-        "<br> % Not Going to Doctor Office Due to Cost: " + nodoctorvisit;});
+      if (currentAxisLabelX === "medianincome", currentAxisLabelY==="nodoctorvisit") 
+        {return stateName + "<br> Median Income: " + xinfo +
+         "<br> + % Not Going to Doctor Office Due to Cost: " + yinfo;}
+      else if (currentAxisLabelX === "medianincome", currentAxisLabelY==="percentcoverage") 
+        {return stateName + "<br> Median Income: " + xinfo +
+         "<br> + % Healthcare Coverage: " + yinfo;}
+      else if (currentAxisLabelX === "medianincome", currentAxisLabelY==="percentseatbelt") 
+        {return stateName + "<br> Median Income: " + xinfo +
+         "<br> + % Wearing Seatbelt: " + yinfo;}
 
+      else if (currentAxisLabelX === "publictransit", currentAxisLabelY==="nodoctorvisit") 
+        {return stateName + "<br> % Used Public Transportation: " + xinfo +
+         "<br> + % Not Going to Doctor Office Due to Cost: " + yinfo;}
+      else if (currentAxisLabelX === "publictransit", currentAxisLabelY==="percentseatbelt") 
+        {return stateName + "<br> % Used Public Transportation: " + xinfo +
+         "<br> + % Wearing Seatbelt: " + yinfo;}
+      else if (currentAxisLabelX === "publictransit", currentAxisLabelY==="percentseatbelt") 
+        {return stateName + "<br> % Used Public Transportation: " + xinfo +
+         "<br> + % Wearing Seatbelt: " + yinfo;}
+
+      else if (currentAxisLabelX === "population", currentAxisLabelY==="nodoctorvisit") 
+        {return stateName + "<br> Population: " + xinfo +
+         "<br> + % Not Going to Doctor Office Due to Cost: " + yinfo;}
+      else if (currentAxisLabelX === "population", currentAxisLabelY==="percentseatbelt") 
+        {return stateName + "<br> Population: " + xinfo +
+         "<br> + % Wearing Seatbelt: " + yinfo;}
+      else if (currentAxisLabelX === "population", currentAxisLabelY==="percentseatbelt") 
+        {return stateName + "<br> Population: " + xinfo +
+         "<br> + % Wearing Seatbelt: " + yinfo;}
+         });
 
 // Create tooltip
 chart.call(toolTip); 
@@ -87,7 +123,7 @@ chart.selectAll("circle")
   .attr("cx",function(data, index)
     {return xLinearScale(+data[currentAxisLabelX]);})
   .attr("cy",function(data, index)
-    {return yLinearScale(+data.nodoctorvisit);})
+    {return yLinearScale(+data[currentAxisLabelY]);})
   .attr("r", "15")
   .attr("fill", "purple")
   .on("click", function(data){toolTip.show(data);})
@@ -100,23 +136,41 @@ var texts = svg.selectAll("text")
   .enter().append("text");
 var textlabel = texts
   .attr("x",function(data){return xLinearScale(+data[currentAxisLabelX]);})
-  .attr("y",function(data){return yLinearScale(+data.nodoctorvisit);})
+  .attr("y",function(data){return yLinearScale(+data[currentAxisLabelY]);})
   .text(function(data){return data.abbr})
   .attr("fill","white")
   .attr("font-size", "9");
 
 //Display y-axis
-chart.append("g").call(leftAxis);
+chart.append("g")
+  .attr("class", "y-axis").call(leftAxis);
 chart
   .append("text")
   .attr("transform","rotate(-90)")
   .attr("y", 0-margin.left + 10)
   .attr("x", 0- height/2)
   .attr("dy", "1em")
-  .attr("class","axis-text active")
-  .attr("data-axis-name","nodoctorvisit")
+  .attr("class","y-axis-text activey")
+  .attr("y-axis-name","nodoctorvisit")
   .text("% Not Visit Doctor Office Due to Cost");
-
+chart
+  .append("text")
+  .attr("transform","rotate(-90)")
+  .attr("y", 0-margin.left + 30)
+  .attr("x", 0- height/2)
+  .attr("dy", "1em")
+  .attr("class","y-axis-text inactivey")
+  .attr("y-axis-name","percentcoverage")
+  .text("% Having Healthcare Coverage");
+chart
+  .append("text")
+  .attr("transform","rotate(-90)")
+  .attr("y", 0-margin.left + 50)
+  .attr("x", 0- height/2)
+  .attr("dy", "1em")
+  .attr("class","y-axis-text inactivey")
+  .attr("y-axis-name","percentseatbelt")
+  .text("% Wearing Seatbelt");
 
 //Display x-axis
 
@@ -168,11 +222,11 @@ chart.append("text")
 
   if (isClickedSelectionInactive)
     {currentAxisLabelX = clickedAxis;
-    findMinAndMax(currentAxisLabelX);;
+      findMinAndMax(currentAxisLabelX);
     xLinearScale.domain([xMin,xMax]);
     texts
       .attr("x",function(data){return xLinearScale(+data[currentAxisLabelX]);})
-      .attr("y",function(data){return yLinearScale(+data.nodoctorvisit);})
+      .attr("y",function(data){return yLinearScale(+data[currentAxisLabelY]);})
     
     svg.select(".x-axis").transition().duration(1800).call(bottomAxis);
  
@@ -181,7 +235,37 @@ chart.append("text")
           {return xLinearScale(+data[currentAxisLabelX]);})
           .duration(1800);
         });
-
     labelChange(clickedSelection);}});
 
+  function labelChangeY(clickedAxisY) {
+    d3.selectAll(".y-axis-text")
+      .filter(".activey")
+      .classed("activey", false)
+      .classed("inactivey", true);
+  clickedAxisY.classed("inactivey",false).classed("activey", true); }
+
+  d3.selectAll(".y-axis-text").on("click", function()
+  {var clickedSelectionY = d3.select(this); 
+  
+  var isClickedSelectionInactiveY = clickedSelectionY.classed("inactivey");
+  
+  var clickedAxisY =clickedSelectionY.attr("y-axis-name");
+  console.log("current axis: ", clickedAxisY);
+
+  if (isClickedSelectionInactiveY)
+   {currentAxisLabelY = clickedAxisY;
+    findMinAndMaxY(currentAxisLabelY);
+    yLinearScale.domain([0,yMax]);
+    texts
+      .attr("x",function(data){return xLinearScale(+data[currentAxisLabelX]);})
+      .attr("y",function(data){return yLinearScale(+data[currentAxisLabelY]);})
+    
+    svg.select(".y-axis").transition().duration(1800).call(leftAxis);
+ 
+    d3.selectAll("circle").each(function() 
+        {d3.select(this).transition().attr("cy", function(data) 
+          {return yLinearScale(+data[currentAxisLabelY]);})
+          .duration(1800);
+        });
+    labelChangeY(clickedSelectionY);}});
 });
